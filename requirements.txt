@@ -1,4 +1,4 @@
-pandas==1.2.4
+pandas==1.0.5
 numpy==1.18.5
 lxml==4.5.2
 tqdm==4.42.1

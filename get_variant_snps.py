@@ -144,28 +144,36 @@ def find_variant_snps(file_list: List[str], gene_list: List[str], output_path: s
             if re.match(r".*Chr06.*", file): 
                 
                 file_info_dict: Dict[str, Optional[List]] = {
-                    "name":file_df.IlmnID.values.tolist(), 
-                    "RsID":file_df["RS Name"].values.tolist(),
-                    "Chr": file_df.Chr.values.tolist(),
-                    "MapInfo": file_df.MapInfo.values.tolist(),
-                    "Alleles": file_df.SNP.values.tolist(),
+                    "name":filtered_df.IlmnID.values.tolist(), 
+                    "RsID":filtered_df["RS Name"].values.tolist(),
+                    "Chr": filtered_df.Chr.values.tolist(),
+                    "MapInfo": filtered_df.MapInfo.values.tolist(),
+                    "Alleles": filtered_df.SNP.values.tolist(),
                     "Transcript":None,
-                    "Gene(s)":file_df["Gene(s)"].values.tolist(),
-                    "In-exon": file_df["In-exon"].values.tolist(),
-                    "Mutation(s)": file_df["Mutation(s)"].values.tolist()
+                    "Gene(s)":filtered_df["Gene(s)"].values.tolist(),
+                    "In-exon": filtered_df["In-exon"].values.tolist(),
+                    "Mutation(s)": filtered_df["Mutation(s)"].values.tolist()
                     }
                 
                 file_info_df: pd.DataFrame = pd.DataFrame.from_dict(file_info_dict)
 
                 file_info_df = file_info_df.drop(["Genes"], axis=1)
 
-                file_info_df.to_csv(output_path, sep="\t", mode="a+", index=False)
+                filtered_df = file_info_df
 
             else:
 
                 filtered_df = filtered_df.drop(["Genes"], axis=1)
 
-                filtered_df.to_csv(output_path,sep="\t", mode="a+", index=False)
+                
+        if result == 0:
+
+            filtered_df.to_csv(output_path, sep="\t", mode="a+", index=False)
+
+        else:
+            
+            filtered_df.to_csv(output_path, sep="\t", mode="a+", index=False, header=False)
+
         result += 1
 
 @app.command()
