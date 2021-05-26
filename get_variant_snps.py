@@ -11,6 +11,33 @@ from tqdm import tqdm
 
 app = typer.Typer(add_completion=False)
 
+class Filter:
+    """class that will apply the regex filter to find either the missense/nonse variants or all of them"""
+    def __init__(self, find_all_snps: bool) -> None:
+        # This attribute will be tree or false
+        self.snps_to_gather: bool = find_all_snps
+
+    def filter_for_pathogenicity(self, variant_df: pd.DataFrame) -> pd.DataFrame:
+        """function that will filter the provided dataframe for variants based on if an argument is passed. If the self attribute is True then all the variants will be returned otherwise just the pathogenic ones will be 
+        Parameter
+        _________
+        variant_df : pd.DataFrame
+            dataframe that has the information about the gene of interest such as what mega probes there are and what the mutation does
+            
+        Return
+        ______
+        pd.DataFrame
+            dataframe that either only has missense/nonsense variants or has all the variants
+        """
+        # if the user chooses to keep all snps then
+        if self.snps_to_gather:
+            
+            return variant_df[variant_df["Mutation(s)"].str.contains(r'Missense|Nonsense|Silent|Synonymous', na=False)]
+
+        else:
+
+            return variant_df[variant_df["Mutation(s)"].str.contains(r'Missense|Nonsense', na=False)]
+
 def get_files(file_directory: str) -> List[str]:
     """Function that can get all the annotated excel files from the specified directory
     Parameters
@@ -99,7 +126,7 @@ def remove_previous_file(output_name: str):
     except FileNotFoundError:
         pass
 
-def find_variant_snps(file_list: List[str], gene_list: List[str], output_path: str):
+def find_variant_snps(file_list: List[str], gene_list: List[str], output_path: str, aggregate_all_probes: bool):
     """Function to find the variant snps on the mega probe for a specific gene 
     Parameters
     __________
@@ -111,8 +138,14 @@ def find_variant_snps(file_list: List[str], gene_list: List[str], output_path: s
     
     output_path : str
         string that list the output file path (including the filename) 
+
+    aggregate_all_probes : bool
+        boolean value for whether or not the user wants to keep all the probes or only the missense/nonsense ones
     """
     # looking for the gene in each of the files
+
+    # creating a filter type
+    filter_object: Filter = Filter(aggregate_all_probes)
 
     result = 0
     for i in tqdm(range(len(file_list))):
@@ -139,7 +172,7 @@ def find_variant_snps(file_list: List[str], gene_list: List[str], output_path: s
 
         if not filtered_df.empty:
 
-            filtered_df = filtered_df[filtered_df["Mutation(s)"].str.contains(r'Missense|Nonsense', na=False)]
+            filtered_df = filter_object.filter_for_pathogenicity(filtered_df)
             
             if re.match(r".*Chr06.*", file): 
                 
@@ -171,7 +204,7 @@ def find_variant_snps(file_list: List[str], gene_list: List[str], output_path: s
             filtered_df.to_csv(output_path, sep="\t", mode="a+", index=False)
 
         else:
-            
+
             filtered_df.to_csv(output_path, sep="\t", mode="a+", index=False, header=False)
 
         result += 1
@@ -183,9 +216,11 @@ def get_variants(
     ), 
     output_filepath: str = typer.Argument(
         ..., help="String that list the output filepath including the file name to output the resulting file into "
-    ), gene_target_file: str = typer.Argument(
+    ), 
+    gene_target_file: str = typer.Argument(
         ..., help="String that list the file path to a text file that has one column that has gene targets for the program. This file should have a column named 'gene'"
-    )
+    ), 
+    gather_all_snps: bool = typer.Option(False, help="Argument to indicate if the program should return all variant probes whose mutation consequences are known or if the program should only return the missense/nonsense probes")
     ):
     """
     main function to generate a file that contains all pathogenic snps for genes of interests from the annotated mega files
@@ -204,7 +239,7 @@ def get_variants(
     gene_list: List[str] = get_gene_list(gene_target_file)
 
     # getting all the snps for a specific variant
-    find_variant_snps(file_list, gene_list, output_filepath)
+    find_variant_snps(file_list, gene_list, output_filepath, gather_all_snps)
 
 if __name__ == '__main__':
     app()
